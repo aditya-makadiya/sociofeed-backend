@@ -26,6 +26,7 @@ generator client {
      isActive      Boolean      @default(false) // Account activation status
      createdAt     DateTime     @default(now())
      updatedAt     DateTime     @updatedAt
+     tokens        Token[]
      posts         Post[]       // One-to-many: User -> Posts
      comments      Comment[]    // One-to-many: User -> Comments
      likes         Like[]       // One-to-many: User -> Likes
@@ -83,6 +84,18 @@ generator client {
      following     User         @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
      @@unique([followerId, followingId]) // Prevent duplicate follows
    }
+
+ model Token {
+  id         String   @id @default(uuid()) @db.Uuid
+  token      String   @unique
+  type       String   // e.g., 'activation' or 'reset'
+  expiresAt  DateTime
+  used       Boolean  @default(false)
+  userId     String   @db.Uuid
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+}
+
 
    // Message model for real-time chat
    model Message {

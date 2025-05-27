@@ -1,11 +1,24 @@
 import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import authRoutes from './routes/authRoutes.js';
+import { errorHandler } from './middleware/errorHandler.js';
 const app = express();
-const port = 3000;
 
-app.get('/', (_req, res) => {
-  res.send('Hello, Express!');
+dotenv.config();
+app.use(cors());
+app.use(express.json());
+
+const PORT = process.env.PORT || 5000;
+
+app.get('/', (req, res) => {
+  res.json({ message: 'SocioFeed Backend is running!' });
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+app.use('/api/auth', authRoutes);
+
+app.use(errorHandler);
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

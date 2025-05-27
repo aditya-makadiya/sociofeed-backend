@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/aditya-makadiya/sociofeed-backend#readme",
   "dependencies": {
+    "@prisma/client": "^6.6.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "express": "^5.1.0"
   },
@@ -35,7 +36,8 @@
     "globals": "^16.2.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
-    "prettier": "^3.5.3"
+    "prettier": "^3.5.3",
+    "prisma": "^6.6.0"
   },
   "lint-staged": {
     "**/*.{js,jsx}": [

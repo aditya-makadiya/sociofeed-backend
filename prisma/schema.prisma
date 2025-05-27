@@ -1,0 +1,107 @@
+generator client {
+     provider = "prisma-client-js"
+     output   = "../generated/prisma"
+   }
+
+   datasource db {
+     provider = "postgresql"
+     url      = env("DATABASE_URL")
+   }
+
+   // Enable uuid-ossp extension for UUID generation
+   model SchemaExtension {
+     id        String   @id @default(uuid()) @db.Uuid
+     extension String
+     @@map("_SchemaExtension")
+   }
+
+   // User model for authentication and profiles
+   model User {
+     id            String       @id @default(uuid()) @db.Uuid
+     username      String       @unique @db.VarChar(50)
+     email         String       @unique @db.VarChar(255)
+     password      String       @db.VarChar(255) // Hashed password
+     bio           String?      @db.Text
+     avatar        String?      @db.VarChar(255) // URL to avatar image
+     isActive      Boolean      @default(false) // Account activation status
+     createdAt     DateTime     @default(now())
+     updatedAt     DateTime     @updatedAt
+     posts         Post[]       // One-to-many: User -> Posts
+     comments      Comment[]    // One-to-many: User -> Comments
+     likes         Like[]       // One-to-many: User -> Likes
+     followers     Follow[]     @relation("Following") // Users following this user
+     following     Follow[]     @relation("Follower") // Users this user follows
+     sentMessages  Message[]    @relation("Sender") // Messages sent by this user
+     receivedMessages Message[] @relation("Receiver") // Messages received by this user
+     savedPosts    SavedPost[]  // Posts saved by this user
+   }
+
+   // Post model for user-generated content
+   model Post {
+     id            String       @id @default(uuid()) @db.Uuid
+     content       String       @db.Text
+     images        String[]     @db.VarChar(255) // Array of image URLs (max 4)
+     createdAt     DateTime     @default(now())
+     updatedAt     DateTime     @updatedAt
+     userId        String       @db.Uuid
+     user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+     comments      Comment[]    // One-to-many: Post -> Comments
+     likes         Like[]       // One-to-many: Post -> Likes
+     savedBy       SavedPost[]  // Users who saved this post
+   }
+
+   // Comment model for post interactions
+   model Comment {
+     id            String       @id @default(uuid()) @db.Uuid
+     content       String       @db.Text
+     createdAt     DateTime     @default(now())
+     updatedAt     DateTime     @updatedAt
+     userId        String       @db.Uuid
+     postId        String       @db.Uuid
+     user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+     post          Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+   }
+
+   // Like model for post interactions
+   model Like {
+     id            String       @id @default(uuid()) @db.Uuid
+     createdAt     DateTime     @default(now())
+     userId        String       @db.Uuid
+     postId        String       @db.Uuid
+     user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+     post          Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+     @@unique([userId, postId]) // Prevent duplicate likes
+   }
+
+   // Follow model for user relationships
+   model Follow {
+     id            String       @id @default(uuid()) @db.Uuid
+     followerId    String       @db.Uuid
+     followingId   String       @db.Uuid
+     createdAt     DateTime     @default(now())
+     follower      User         @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+     following     User         @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+     @@unique([followerId, followingId]) // Prevent duplicate follows
+   }
+
+   // Message model for real-time chat
+   model Message {
+     id            String       @id @default(uuid()) @db.Uuid
+     content       String       @db.Text
+     createdAt     DateTime     @default(now())
+     senderId      String       @db.Uuid
+     receiverId    String       @db.Uuid
+     sender        User         @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+     receiver      User         @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+   }
+
+   // SavedPost model for bookmarking posts
+   model SavedPost {
+     id            String       @id @default(uuid()) @db.Uuid
+     createdAt     DateTime     @default(now())
+     userId        String       @db.Uuid
+     postId        String       @db.Uuid
+     user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+     post          Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+     @@unique([userId, postId]) // Prevent duplicate saves
+   }

@@ -3,7 +3,7 @@ import { BASE_URL } from '../config/constants.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 export const sendActivationEmail = async (user, token) => {
-  const activationLink = `${BASE_URL}/api/auth/activate/${token}`;
+  const activationLink = `${BASE_URL}/activate/${token}`;
   const mailOptions = {
     from: process.env.NODEMAILER_EMAIL,
     to: user.email,
@@ -29,7 +29,7 @@ export const sendActivationEmail = async (user, token) => {
 };
 
 export const sendResetPasswordEmail = async (user, token) => {
-  const resetLink = `${BASE_URL}/api/auth/reset-password/${token}`;
+  const resetLink = `${BASE_URL}/auth/reset-password/${token}`;
   const mailOptions = {
     from: process.env.NODEMAILER_EMAIL,
     to: user.email,

@@ -1,22 +1,32 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser'; // You forgot to import this
 import authRoutes from './routes/authRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
-const app = express();
 
+// Load environment variables early
 dotenv.config();
-app.use(cors());
-app.use(express.json());
 
+const app = express();
 const PORT = process.env.PORT || 5000;
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
+app.use(
+  cors({
+    origin: BASE_URL,
+    credentials: true,
+  })
+);
+
+app.use(cookieParser());
+app.use(express.json());
 
 app.get('/', (req, res) => {
   res.json({ message: 'SocioFeed Backend is running!' });
 });
 
-app.use('/api/auth', authRoutes);
-
+app.use('/auth', authRoutes);
 app.use(errorHandler);
 
 app.listen(PORT, () => {

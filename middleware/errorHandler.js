@@ -1,3 +1,6 @@
+/**
+ * Custom error class for application errors.
+ */
 export class AppError extends Error {
   constructor(message, statusCode) {
     super(message);
@@ -7,12 +10,20 @@ export class AppError extends Error {
   }
 }
 
-export const errorHandler = (err, req, res) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
+export const errorHandler = (err, req, res, _next) => {
+  // Validate res
+  if (!res || typeof res.status !== 'function') {
+    console.error('Invalid response object:', res);
+    return; // Stop execution, rely on Express default error handler
+  }
 
-  res.status(err.statusCode).json({
-    status: err.status,
-    message: err.message,
+  const statusCode = err.statusCode || 500;
+  const status = err.status || 'error';
+  const message = err.message || 'Internal Server Error';
+
+  res.status(statusCode).json({
+    status,
+    message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };

@@ -88,7 +88,7 @@ generator client {
  model Token {
   id         String   @id @default(uuid()) @db.Uuid
   token      String   @unique
-  type       String   // e.g., 'activation' or 'reset'
+  type       String
   expiresAt  DateTime
   used       Boolean  @default(false)
   userId     String   @db.Uuid

@@ -1,64 +1,97 @@
-import * as Yup from 'yup';
+import { check, validationResult } from 'express-validator';
 import {
   USERNAME_REGEX,
   EMAIL_REGEX,
   PASSWORD_REGEX,
 } from '../config/constants.js';
 
-export const validate = schema => async (req, res, next) => {
-  try {
-    await schema.validate(req.body, { abortEarly: false });
-    next();
-  } catch (error) {
-    const errors = error.inner.reduce(
+const handleValidationErrors = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorMap = errors.array().reduce(
       (acc, err) => ({
         ...acc,
-        [err.path]: err.message,
+        [err.param]: err.msg,
       }),
       {}
     );
-    res.status(400).json({ errors });
+    return res.status(400).json({ errors: errorMap });
   }
+  next();
 };
 
-export const registerSchema = Yup.object({
-  username: Yup.string()
-    .matches(
-      USERNAME_REGEX,
-      'Username must be alphanumeric and 3-50 characters'
-    )
-    .required('Username is required'),
-  email: Yup.string()
-    .matches(EMAIL_REGEX, 'Invalid email format')
-    .required('Email is required'),
-  password: Yup.string()
-    .matches(
-      PASSWORD_REGEX,
+// Validation chains for registration
+export const registerValidations = [
+  check('username')
+    .matches(USERNAME_REGEX)
+    .withMessage('Username must be alphanumeric and 3-50 characters')
+    .notEmpty()
+    .withMessage('Username is required'),
+  check('email')
+    .matches(EMAIL_REGEX)
+    .withMessage('Invalid email format')
+    .notEmpty()
+    .withMessage('Email is required'),
+  check('password')
+    .matches(PASSWORD_REGEX)
+    .withMessage(
       'Password must be at least 8 characters, with mixed case, number, and symbol'
     )
-    .required('Password is required'),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref('password')], 'Passwords must match')
-    .required('Confirm password is required'),
-});
+    .notEmpty()
+    .withMessage('Password is required'),
+  check('confirmPassword')
+    .custom((value, { req }) => value === req.body.password)
+    .withMessage('Passwords must match')
+    .notEmpty()
+    .withMessage('Confirm password is required'),
+  handleValidationErrors,
+];
 
-export const loginSchema = Yup.object({
-  identifier: Yup.string().required('Username or email is required'),
-  password: Yup.string().required('Password is required'),
-});
+// Validation chains for login
+export const loginValidations = [
+  check('identifier').notEmpty().withMessage('Username or email is required'),
+  check('password').notEmpty().withMessage('Password is required'),
+  handleValidationErrors,
+];
 
-export const forgotPasswordSchema = Yup.object({
-  identifier: Yup.string().required('Username or email is required'),
-});
+// Validation chains for forgot password
+export const forgotPasswordValidations = [
+  check('identifier').notEmpty().withMessage('Username or email is required'),
+  handleValidationErrors,
+];
 
-export const resetPasswordSchema = Yup.object({
-  password: Yup.string()
-    .matches(
-      PASSWORD_REGEX,
+// Validation chains for reset password
+export const resetPasswordValidations = [
+  check('password')
+    .matches(PASSWORD_REGEX)
+    .withMessage(
       'Password must be at least 8 characters, with mixed case, number, and symbol'
     )
-    .required('Password is required'),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref('password')], 'Passwords must match')
-    .required('Confirm password is required'),
-});
+    .notEmpty()
+    .withMessage('Password is required'),
+  check('confirmPassword')
+    .custom((value, { req }) => value === req.body.password)
+    .withMessage('Passwords must match')
+    .notEmpty()
+    .withMessage('Confirm password is required'),
+  handleValidationErrors,
+];
+
+// Validation chains for updating user profile
+export const updateProfileValidations = [
+  check('bio')
+    .isLength({ max: 255 })
+    .withMessage('Bio must be 255 characters or less')
+    .optional({ nullable: true }),
+  handleValidationErrors,
+];
+
+// Validation chains for follow/unfollow
+export const followValidations = [
+  check('id')
+    .isUUID()
+    .withMessage('Invalid user ID')
+    .notEmpty()
+    .withMessage('User ID is required'),
+  handleValidationErrors,
+];

@@ -50,6 +50,6 @@ export const generateResetToken = (userId, tokenId) => {
  */
 export const generateRefreshToken = (userId, tokenId) => {
   return jwt.sign({ userId, tokenId }, JWT_SECRET, {
-    expiresIn: Math.floor(JWT_REFRESH_EXPIRES_IN / 1000),
+    expiresIn: Math.floor(JWT_REFRESH_EXPIRES_IN),
   });
 };

@@ -15,13 +15,6 @@ import {
   COOKIE_SECURE,
 } from '../config/constants.js';
 
-/**
- * Registers a new user and sends an activation email.
- * @param {Object} req - Express request object.
- * @param {Object} res - Express response object.
- * @param {Function} next - Express next middleware function.
- * @returns {Promise<void>}
- */
 export const register = async (req, res, next) => {
   try {
     const { username, email } = await registerUser(req.body);
@@ -36,13 +29,6 @@ export const register = async (req, res, next) => {
   }
 };
 
-/**
- * Logs in a user and sets access and refresh token cookies.
- * @param {Object} req - Express request object.
- * @param {Object} res - Express response object.
- * @param {Function} next - Express next middleware function.
- * @returns {Promise<void>}
- */
 export const login = async (req, res, next) => {
   try {
     const { user, accessToken, refreshToken } = await loginUser(req.body);
@@ -74,6 +60,13 @@ export const activate = async (req, res, next) => {
   try {
     const { token } = req.params;
     const user = await activateAccountUser(token);
+    if (user.alreadyActivated) {
+      return res.status(200).json({
+        status: 'success',
+        message: 'Account already activated',
+        data: { user },
+      });
+    }
     res.status(200).json({
       status: 'success',
       message: 'Account activated successfully',

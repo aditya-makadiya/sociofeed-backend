@@ -29,7 +29,7 @@ export const sendActivationEmail = async (user, token) => {
 };
 
 export const sendResetPasswordEmail = async (user, token) => {
-  const resetLink = `${BASE_URL}/auth/reset-password/${token}`;
+  const resetLink = `${BASE_URL}/reset-password/${token}`;
   const mailOptions = {
     from: process.env.NODEMAILER_EMAIL,
     to: user.email,

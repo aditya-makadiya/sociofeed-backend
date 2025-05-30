@@ -10,40 +10,31 @@ import {
   logout,
 } from '../controllers/authController.js';
 import {
-  validate,
-  registerSchema,
-  loginSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
+  registerValidations,
+  loginValidations,
+  forgotPasswordValidations,
+  resetPasswordValidations,
 } from '../middleware/validate.js';
 
 const router = express.Router();
 
 // Register a new user
-router.post('/register', validate(registerSchema), register);
+router.post('/register', registerValidations, register);
 
 // Log in a user
-router.post('/login', validate(loginSchema), login);
+router.post('/login', loginValidations, login);
 
 // Activate user account
 router.get('/activate/:token', activate);
 
 // Request password reset
-router.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
+router.post('/forgot-password', forgotPasswordValidations, forgotPassword);
 
 // Reset password
-router.post(
-  '/reset-password/:token',
-  validate(resetPasswordSchema),
-  resetPassword
-);
+router.post('/reset-password/:token', resetPasswordValidations, resetPassword);
 
 // Resend activation email
-router.post(
-  '/resend-activation',
-  validate(forgotPasswordSchema),
-  resendActivation
-);
+router.post('/resend-activation', forgotPasswordValidations, resendActivation);
 
 // Refresh access token
 router.get('/refresh-token', refreshToken);

@@ -19,16 +19,6 @@ import {
 
 const prisma = new PrismaClient();
 
-/**
- * Stores a token in the Token model.
- * @param {string} token - JWT token.
- * @param {string} type - Token type (activation, reset, refresh).
- * @param {string} userId - User ID.
- * @param {Date} expiresAt - Expiration date.
- * @param {string} [id] - Optional token ID (UUID).
- * @returns {Promise<Object>} Created token record.
- * @throws {AppError} If userId is invalid or token creation fails.
- */
 const storeToken = async (
   token,
   type,
@@ -54,15 +44,6 @@ const storeToken = async (
   }
 };
 
-/**
- * Registers a new user and sends an activation email.
- * @param {Object} params - Registration details.
- * @param {string} params.username - Username.
- * @param {string} params.email - Email address.
- * @param {string} params.password - Password.
- * @returns {Promise<Object>} User data.
- * @throws {AppError} If registration fails.
- */
 export const registerUser = async ({ username, email, password }) => {
   if (!username || !email) {
     throw new AppError('Username and email are required', 400);
@@ -111,14 +92,6 @@ export const registerUser = async ({ username, email, password }) => {
   }
 };
 
-/**
- * Logs in a user and returns access and refresh tokens.
- * @param {Object} params - Login credentials.
- * @param {string} params.identifier - Username or email.
- * @param {string} params.password - Password.
- * @returns {Promise<Object>} User data and tokens.
- * @throws {AppError} If login fails.
- */
 export const loginUser = async ({ identifier, password }) => {
   const user = await prisma.user.findFirst({
     where: { OR: [{ email: identifier }, { username: identifier }] },
@@ -159,15 +132,9 @@ export const loginUser = async ({ identifier, password }) => {
   };
 };
 
-/**
- * Activates a user account using an activation token.
- * @param {string} token - Activation token.
- * @returns {Promise<Object>} Activated user data.
- * @throws {AppError} If token is invalid or expired.
- */
 export const activateAccountUser = async token => {
   const tokenRecord = await prisma.token.findFirst({
-    where: { token, type: 'activation', used: false },
+    where: { token, type: 'activation' },
     include: { user: true },
   });
 
@@ -209,12 +176,6 @@ export const activateAccountUser = async token => {
   }
 };
 
-/**
- * Initiates a password reset by sending a reset email.
- * @param {string} identifier - Username or email.
- * @returns {Promise<void>}
- * @throws {AppError} If user not found or inactive.
- */
 export const forgotPasswordUser = async identifier => {
   const user = await prisma.user.findFirst({
     where: { OR: [{ email: identifier }, { username: identifier }] },
@@ -244,14 +205,6 @@ export const forgotPasswordUser = async identifier => {
   await sendResetPasswordEmail(user, token);
 };
 
-/**
- * Resets a user's password using a reset token.
- * @param {string} token - Reset token.
- * @param {Object} params - New password details.
- * @param {string} params.password - New password.
- * @returns {Promise<void>}
- * @throws {AppError} If token is invalid or expired.
- */
 export const resetPasswordUser = async (token, { password }) => {
   const tokenRecord = await prisma.token.findFirst({
     where: { token, type: 'reset', used: false },

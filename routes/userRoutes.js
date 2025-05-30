@@ -10,9 +10,10 @@ import {
   getFollowing,
   getUserPosts,
   getUserSuggestions,
+  resetAvatar,
 } from '../controllers/userController.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
-import { uploadAvatar } from '../middleware/uploadMiddleware.js';
+import { uploadAvatar } from '../middleware/multer.js';
 import {
   followValidations,
   updateProfileValidations,
@@ -28,6 +29,7 @@ router.get('/', authMiddleware, getUsers); // List users with search
 router.get('/:id', authMiddleware, getUserById); // Get user profile
 router.patch('/:id', authMiddleware, updateProfileValidations, updateProfile); // Update bio
 router.patch('/:id/avatar', authMiddleware, uploadAvatar, updateAvatar); // Update avatar
+router.delete('/:id/avatar', authMiddleware, resetAvatar); // Reset avatar to default
 router.post('/:id/follow', authMiddleware, followValidations, followUser); // Follow user
 router.delete('/:id/follow', authMiddleware, followValidations, unfollowUser); // Unfollow user
 router.get('/:id/followers', authMiddleware, getFollowers); // List followers

@@ -8,6 +8,7 @@ import {
   resendActivationUser,
   refreshTokenUser,
   logoutUser,
+  getCurrentUser,
 } from '../services/authService.js';
 import {
   COOKIE_ACCESS_MAX_AGE,
@@ -34,13 +35,25 @@ export const login = async (req, res, next) => {
     const { user, accessToken, refreshToken } = await loginUser(req.body);
     res
       .cookie('accessToken', accessToken, {
-        httpOnly: true,
+        httpOnly: false,
         secure: COOKIE_SECURE,
         sameSite: 'lax',
         maxAge: COOKIE_ACCESS_MAX_AGE,
       })
       .cookie('refreshToken', refreshToken, {
-        httpOnly: true,
+        httpOnly: false,
+        secure: COOKIE_SECURE,
+        sameSite: 'lax',
+        maxAge: COOKIE_REFRESH_MAX_AGE,
+      })
+      .cookie('isAuthenticated', 'true', {
+        httpOnly: false,
+        secure: COOKIE_SECURE,
+        sameSite: 'lax',
+        maxAge: COOKIE_REFRESH_MAX_AGE,
+      })
+      .cookie('user', JSON.stringify(user), {
+        httpOnly: false,
         secure: COOKIE_SECURE,
         sameSite: 'lax',
         maxAge: COOKIE_REFRESH_MAX_AGE,
@@ -102,6 +115,30 @@ export const resetPassword = async (req, res, next) => {
   }
 };
 
+// src/controllers/authController.js
+export const getMe = async (req, res, next) => {
+  try {
+    if (!req.cookies.isAuthenticated) {
+      throw new AppError('Not authenticated', 401);
+    }
+    const accessToken = req.cookies.accessToken;
+    const refreshToken1 = req.cookies.refreshToken;
+    // const refreshToken1 = req.cookie.refreshToken;
+    console.log('getMe cookies:', req.cookies.refreshToken);
+    // console.log('getMe user:', req.user);
+    const user = await getCurrentUser(accessToken);
+    res.status(200).json({
+      status: 'success',
+      data: { user },
+      accessToken: accessToken,
+      refreshToken: refreshToken1,
+    });
+  } catch (error) {
+    console.error('getMe error:', error);
+    next(error);
+  }
+};
+
 export const resendActivation = async (req, res, next) => {
   try {
     await resendActivationUser(req.body.identifier);
@@ -143,17 +180,29 @@ export const refreshToken = async (req, res, next) => {
 export const logout = async (req, res, next) => {
   try {
     const refreshTokenValue = req.cookies.refreshToken;
+
     if (refreshTokenValue) {
-      await logoutUser(refreshTokenValue);
+      await logoutUser(refreshTokenValue); // Revoke or delete refresh token from DB if needed
     }
+
     res
       .clearCookie('accessToken', {
-        httpOnly: true,
+        httpOnly: false,
         secure: COOKIE_SECURE,
         sameSite: 'lax',
       })
       .clearCookie('refreshToken', {
-        httpOnly: true,
+        httpOnly: false,
+        secure: COOKIE_SECURE,
+        sameSite: 'lax',
+      })
+      .clearCookie('isAuthenticated', {
+        httpOnly: false,
+        secure: COOKIE_SECURE,
+        sameSite: 'lax',
+      })
+      .clearCookie('user', {
+        httpOnly: false,
         secure: COOKIE_SECURE,
         sameSite: 'lax',
       })

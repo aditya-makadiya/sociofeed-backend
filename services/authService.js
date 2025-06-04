@@ -132,6 +132,35 @@ export const loginUser = async ({ identifier, password }) => {
   };
 };
 
+// src/services/authService.js
+export const getCurrentUser = async accessToken => {
+  if (!accessToken) {
+    throw new AppError('No access token provided', 401);
+  }
+
+  try {
+    const { userId } = jwt.verify(accessToken, JWT_SECRET);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, email: true, isActive: true },
+    });
+
+    if (!user || !user.isActive) {
+      throw new AppError('User not found or inactive', 401);
+    }
+
+    return user;
+  } catch (error) {
+    if (
+      error.name === 'TokenExpiredError' ||
+      error.name === 'JsonWebTokenError'
+    ) {
+      throw new AppError('Invalid or expired access token', 401);
+    }
+    throw new AppError(`Failed to fetch user: ${error.message}`, 500);
+  }
+};
+
 export const activateAccountUser = async token => {
   const tokenRecord = await prisma.token.findFirst({
     where: { token, type: 'activation' },

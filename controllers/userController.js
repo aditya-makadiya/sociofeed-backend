@@ -129,13 +129,19 @@ export const unfollowUser = async (req, res, next) => {
 
 export const getFollowers = async (req, res, next) => {
   try {
-    const { q = '', page = 1, pageSize = 10 } = req.query;
+    const {
+      q = '',
+      page = 1,
+      pageSize = 10,
+      includeInactive = 'false',
+    } = req.query;
     const result = await getFollowersService({
       userId: req.params.id,
       query: q,
       page: parseInt(page),
       pageSize: parseInt(pageSize),
       currentUserId: req.user?.userId,
+      includeInactive: includeInactive === 'true', // Pass includeInactive flag
     });
     res.status(200).json({
       status: 'success',

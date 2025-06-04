@@ -315,6 +315,7 @@ export const getFollowersService = async ({
   page,
   pageSize,
   currentUserId,
+  includeInactive = false, // New parameter to toggle isActive filter
 }) => {
   if (!isValidUUID(userId)) {
     throw new AppError('Invalid user ID format', 400);
@@ -325,17 +326,25 @@ export const getFollowersService = async ({
   if (page < 1 || pageSize < 1 || pageSize > 50) {
     throw new AppError('Invalid page or pageSize', 400);
   }
+
   const skip = (page - 1) * pageSize;
+
+  // Check if the target user exists (without isActive filter initially)
   const userExists = await prisma.user.findUnique({
-    where: { id: userId, isActive: true },
+    where: { id: userId },
+    select: { id: true, username: true, isActive: true },
   });
   if (!userExists) {
-    throw new AppError('User not found or inactive', 404);
+    throw new AppError('User not found', 404);
   }
+  if (!includeInactive && !userExists.isActive) {
+    throw new AppError('User is inactive', 404);
+  }
+
   const where = {
     followingId: userId,
     follower: {
-      isActive: true,
+      isActive: includeInactive ? undefined : true, // Optional isActive filter
       ...(query && {
         OR: [
           { username: { contains: query, mode: 'insensitive' } },
@@ -346,6 +355,23 @@ export const getFollowersService = async ({
   };
 
   try {
+    // Debug: Log raw Follow records
+    const rawFollowers = await prisma.follow.findMany({
+      where: { followingId: userId },
+      select: { followerId: true, followingId: true, createdAt: true },
+    });
+    console.log(`Raw followers for user ${userId}:`, rawFollowers);
+
+    // Debug: Log followers' isActive status
+    if (rawFollowers.length > 0) {
+      const followerIds = rawFollowers.map(f => f.followerId);
+      const followerStatuses = await prisma.user.findMany({
+        where: { id: { in: followerIds } },
+        select: { id: true, username: true, isActive: true },
+      });
+      console.log(`Follower statuses for user ${userId}:`, followerStatuses);
+    }
+
     const [followers, total] = await prisma.$transaction([
       prisma.follow.findMany({
         where,
@@ -356,6 +382,7 @@ export const getFollowersService = async ({
               username: true,
               bio: true,
               avatar: true,
+              isActive: true, // Include for debugging
               _count: { select: { followers: true, following: true } },
               followers: currentUserId
                 ? { where: { followerId: currentUserId }, select: { id: true } }
@@ -370,12 +397,16 @@ export const getFollowersService = async ({
       prisma.follow.count({ where }),
     ]);
 
+    // Debug: Log filtered followers
+    console.log(`Filtered followers for user ${userId}:`, followers);
+
     return {
       users: followers.map(({ follower }) => ({
         id: follower.id,
         username: follower.username,
         bio: follower.bio,
         avatar: follower.avatar,
+        isActive: follower.isActive, // Include for debugging
         followerCount: follower._count.followers,
         followingCount: follower._count.following,
         isFollowing: currentUserId ? follower.followers.length > 0 : false,
@@ -385,6 +416,7 @@ export const getFollowersService = async ({
       pageSize,
     };
   } catch (error) {
+    console.error(`Error fetching followers for user ${userId}:`, error);
     throw new AppError(`Failed to fetch followers: ${error.message}`, 500);
   }
 };
@@ -395,6 +427,7 @@ export const getFollowingService = async ({
   page,
   pageSize,
   currentUserId,
+  includeInactive = false,
 }) => {
   if (!isValidUUID(userId)) {
     throw new AppError('Invalid user ID format', 400);
@@ -405,27 +438,57 @@ export const getFollowingService = async ({
   if (page < 1 || pageSize < 1 || pageSize > 50) {
     throw new AppError('Invalid page or pageSize', 400);
   }
+
   const skip = (page - 1) * pageSize;
+
+  // Check if the target user exists
   const userExists = await prisma.user.findUnique({
-    where: { id: userId, isActive: true },
+    where: { id: userId },
+    select: { id: true, username: true, isActive: true },
   });
   if (!userExists) {
-    throw new AppError('User not found or inactive', 404);
+    throw new AppError('User not found', 404);
   }
+  if (!includeInactive && !userExists.isActive) {
+    throw new AppError('User is inactive', 404);
+  }
+
+  // Log the query parameter for debugging
+  console.log(`Query parameter for user ${userId}:`, query);
+
+  // Build the where clause, only applying query filter if query is non-empty
   const where = {
     followerId: userId,
     following: {
-      isActive: true,
-      ...(query && {
-        OR: [
-          { username: { contains: query, mode: 'insensitive' } },
-          { bio: { contains: query, mode: 'insensitive' } },
-        ],
-      }),
+      isActive: includeInactive ? undefined : true,
+      ...(query &&
+        query.trim() !== '' && {
+          OR: [
+            { username: { contains: query, mode: 'insensitive' } },
+            { bio: { contains: query, mode: 'insensitive' } },
+          ],
+        }),
     },
   };
 
   try {
+    // Debug: Log raw Following records
+    const rawFollowing = await prisma.follow.findMany({
+      where: { followerId: userId },
+      select: { followerId: true, followingId: true, createdAt: true },
+    });
+    console.log(`Raw following for user ${userId}:`, rawFollowing);
+
+    // Debug: Log following users' isActive status and relevant fields
+    if (rawFollowing.length > 0) {
+      const followingIds = rawFollowing.map(f => f.followingId);
+      const followingStatuses = await prisma.user.findMany({
+        where: { id: { in: followingIds } },
+        select: { id: true, username: true, bio: true, isActive: true },
+      });
+      console.log(`Following statuses for user ${userId}:`, followingStatuses);
+    }
+
     const [following, total] = await prisma.$transaction([
       prisma.follow.findMany({
         where,
@@ -436,6 +499,7 @@ export const getFollowingService = async ({
               username: true,
               bio: true,
               avatar: true,
+              isActive: true,
               _count: { select: { followers: true, following: true } },
               followers: currentUserId
                 ? { where: { followerId: currentUserId }, select: { id: true } }
@@ -450,12 +514,17 @@ export const getFollowingService = async ({
       prisma.follow.count({ where }),
     ]);
 
+    // Debug: Log filtered following and where clause
+    console.log(`Where clause for user ${userId}:`, where);
+    console.log(`Filtered following for user ${userId}:`, following);
+
     return {
       users: following.map(({ following }) => ({
         id: following.id,
         username: following.username,
         bio: following.bio,
         avatar: following.avatar,
+        isActive: following.isActive,
         followerCount: following._count.followers,
         followingCount: following._count.following,
         isFollowing: currentUserId ? following.followers.length > 0 : false,
@@ -465,6 +534,7 @@ export const getFollowingService = async ({
       pageSize,
     };
   } catch (error) {
+    console.error(`Error fetching following for user ${userId}:`, error);
     throw new AppError(`Failed to fetch following: ${error.message}`, 500);
   }
 };

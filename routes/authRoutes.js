@@ -8,6 +8,7 @@ import {
   resendActivation,
   refreshToken,
   logout,
+  getMe,
 } from '../controllers/authController.js';
 import {
   registerValidations,
@@ -15,6 +16,7 @@ import {
   forgotPasswordValidations,
   resetPasswordValidations,
 } from '../middleware/validate.js';
+// import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -41,5 +43,7 @@ router.get('/refresh-token', refreshToken);
 
 // Log out a user
 router.post('/logout', logout);
+
+router.get('/me', getMe);
 
 export default router;

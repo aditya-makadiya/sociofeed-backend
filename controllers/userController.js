@@ -15,7 +15,8 @@ import { AppError } from '../middleware/errorHandler.js';
 
 export const getUsers = async (req, res, next) => {
   try {
-    const { q = '', page = 1, pageSize = 10 } = req.query;
+    console.log(req.query);
+    const { search: q = '', page = 1, pageSize = 10 } = req.query;
     const result = await getUsersService({
       query: q,
       page: parseInt(page),

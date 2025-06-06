@@ -11,28 +11,99 @@ const isValidUUID = id => {
   return uuidRegex.test(id);
 };
 
+// export const getUsersService = async ({
+//   query,
+//   page,
+//   pageSize,
+//   currentUserId,
+// }) => {
+//   console.log(query)
+//   if (page < 1 || pageSize < 1 || pageSize > 50) {
+//     throw new AppError('Invalid page or pageSize', 400);
+//   }
+//   if (currentUserId && !isValidUUID(currentUserId)) {
+//     throw new AppError('Invalid current user ID format', 400);
+//   }
+//   const skip = (page - 1) * pageSize;
+//   const where = { username: { contains: query} }
+
+//   try {
+//     const [users, total] = await prisma.$transaction([
+//       prisma.user.findMany({
+//         where,
+//         select: {
+//           id: true,
+//           username: true,
+//           bio: true,
+//           avatar: true,
+//           _count: {
+//             select: { followers: true, following: true },
+//           },
+//           followers: currentUserId
+//             ? { where: { followerId: currentUserId }, select: { id: true } }
+//             : false,
+//         },
+//         skip,
+//         take: pageSize,
+//         orderBy: { username: 'asc' },
+//       }),
+//       prisma.user.count({ where }),
+//     ]);
+
+//     return {
+//       users: users.map(user => ({
+//         id: user.id,
+//         username: user.username,
+//         bio: user.bio,
+//         avatar: user.avatar,
+//         followerCount: user._count.followers,
+//         followingCount: user._count.following,
+//         isFollowing: currentUserId ? user.followers.length > 0 : false,
+//       })),
+//       total,
+//       page,
+//       pageSize,
+//     };
+//   } catch (error) {
+//     throw new AppError(`Failed to fetch users: ${error.message}`, 500);
+//   }
+// };
+
 export const getUsersService = async ({
   query,
   page,
   pageSize,
   currentUserId,
 }) => {
+  console.log('=== getUsersService Debug ===');
+  console.log(query);
+  console.log('Query type:', typeof query);
+  console.log('Query length:', query?.length);
+  console.log('Query after trim:', query?.trim());
+  console.log('Page:', page, 'PageSize:', pageSize);
+
   if (page < 1 || pageSize < 1 || pageSize > 50) {
     throw new AppError('Invalid page or pageSize', 400);
   }
   if (currentUserId && !isValidUUID(currentUserId)) {
     throw new AppError('Invalid current user ID format', 400);
   }
+
   const skip = (page - 1) * pageSize;
-  const where = query
-    ? {
-        OR: [
-          { username: { contains: query, mode: 'insensitive' } },
-          { bio: { contains: query, mode: 'insensitive' } },
-        ],
-        isActive: true,
-      }
-    : { isActive: true };
+
+  // Build the where clause with more explicit conditions
+  const where = {
+    isActive: true,
+  };
+
+  // Only add username filter if query exists and is not empty
+  if (query && typeof query === 'string' && query.trim().length > 0) {
+    where.username = {
+      contains: query.trim(),
+      mode: 'insensitive',
+    };
+    console.log('Added username filter:', where.username);
+  }
 
   try {
     const [users, total] = await prisma.$transaction([
@@ -72,6 +143,11 @@ export const getUsersService = async ({
       pageSize,
     };
   } catch (error) {
+    console.error('Prisma error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+    });
     throw new AppError(`Failed to fetch users: ${error.message}`, 500);
   }
 };

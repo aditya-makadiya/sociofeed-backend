@@ -95,3 +95,51 @@ export const followValidations = [
     .withMessage('User ID is required'),
   handleValidationErrors,
 ];
+
+// Validation chains for creating/updating posts
+export const createPostValidations = [
+  check('content')
+    .isLength({ max: 1000 })
+    .withMessage('Post content must be 1000 characters or less')
+    .optional({ nullable: true }),
+  handleValidationErrors,
+];
+
+export const updatePostValidations = [
+  check('content')
+    .isLength({ max: 1000 })
+    .withMessage('Post content must be 1000 characters or less')
+    .notEmpty()
+    .withMessage('Post content is required'),
+  handleValidationErrors,
+];
+
+// Validation chains for comments
+export const commentValidations = [
+  check('content')
+    .isLength({ min: 1, max: 500 })
+    .withMessage('Comment must be between 1 and 500 characters')
+    .notEmpty()
+    .withMessage('Comment content is required'),
+  handleValidationErrors,
+];
+
+// Validation chains for post ID
+export const postIdValidations = [
+  check('postId')
+    .isUUID()
+    .withMessage('Invalid post ID')
+    .notEmpty()
+    .withMessage('Post ID is required'),
+  handleValidationErrors,
+];
+
+// Validation chains for comment ID
+export const commentIdValidations = [
+  check('commentId')
+    .isUUID()
+    .withMessage('Invalid comment ID')
+    .notEmpty()
+    .withMessage('Comment ID is required'),
+  handleValidationErrors,
+];

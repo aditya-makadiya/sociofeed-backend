@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser'; // You forgot to import this
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import postRoutes from './routes/postRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 // Load environment variables early
@@ -29,6 +30,7 @@ app.get('/', (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
+app.use('/posts', postRoutes);
 app.use(errorHandler);
 
 app.listen(PORT, () => {

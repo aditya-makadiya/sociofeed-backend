@@ -120,7 +120,7 @@ export const getUserByIdService = async (userId, currentUserId) => {
   }
 };
 
-export const updateProfileService = async (userId, { bio }) => {
+export const updateProfileService = async (userId, { username, bio }) => {
   if (!isValidUUID(userId)) {
     throw new AppError('Invalid user ID format', 400);
   }
@@ -130,10 +130,16 @@ export const updateProfileService = async (userId, { bio }) => {
       400
     );
   }
+  if (username && (typeof username !== 'string' || username.length < 3)) {
+    throw new AppError(
+      'Username must be a string and more than 3 characters',
+      400
+    );
+  }
   try {
     const user = await prisma.user.update({
       where: { id: userId, isActive: true },
-      data: { bio },
+      data: { username, bio },
       select: {
         id: true,
         username: true,

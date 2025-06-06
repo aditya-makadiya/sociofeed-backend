@@ -30,12 +30,6 @@ export const generateActivationToken = (userId, tokenId) => {
   });
 };
 
-/**
- * Generates a reset token for password reset.
- * @param {string} userId - User ID.
- * @param {string} tokenId - Token ID.
- * @returns {string} Signed JWT reset token.
- */
 export const generateResetToken = (userId, tokenId) => {
   return jwt.sign({ userId, tokenId }, JWT_SECRET, {
     expiresIn: Math.floor(RESET_TOKEN_EXPIRES_IN / 1000),

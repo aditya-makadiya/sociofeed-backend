@@ -11,64 +11,6 @@ const isValidUUID = id => {
   return uuidRegex.test(id);
 };
 
-// export const getUsersService = async ({
-//   query,
-//   page,
-//   pageSize,
-//   currentUserId,
-// }) => {
-//   console.log(query)
-//   if (page < 1 || pageSize < 1 || pageSize > 50) {
-//     throw new AppError('Invalid page or pageSize', 400);
-//   }
-//   if (currentUserId && !isValidUUID(currentUserId)) {
-//     throw new AppError('Invalid current user ID format', 400);
-//   }
-//   const skip = (page - 1) * pageSize;
-//   const where = { username: { contains: query} }
-
-//   try {
-//     const [users, total] = await prisma.$transaction([
-//       prisma.user.findMany({
-//         where,
-//         select: {
-//           id: true,
-//           username: true,
-//           bio: true,
-//           avatar: true,
-//           _count: {
-//             select: { followers: true, following: true },
-//           },
-//           followers: currentUserId
-//             ? { where: { followerId: currentUserId }, select: { id: true } }
-//             : false,
-//         },
-//         skip,
-//         take: pageSize,
-//         orderBy: { username: 'asc' },
-//       }),
-//       prisma.user.count({ where }),
-//     ]);
-
-//     return {
-//       users: users.map(user => ({
-//         id: user.id,
-//         username: user.username,
-//         bio: user.bio,
-//         avatar: user.avatar,
-//         followerCount: user._count.followers,
-//         followingCount: user._count.following,
-//         isFollowing: currentUserId ? user.followers.length > 0 : false,
-//       })),
-//       total,
-//       page,
-//       pageSize,
-//     };
-//   } catch (error) {
-//     throw new AppError(`Failed to fetch users: ${error.message}`, 500);
-//   }
-// };
-
 export const getUsersService = async ({
   query,
   page,
@@ -658,6 +600,16 @@ export const getUserPostsService = async ({
           likes: currentUserId
             ? { where: { userId: currentUserId }, select: { id: true } }
             : false,
+          savedBy: currentUserId // Changed from savedPosts
+            ? { where: { userId: currentUserId }, select: { id: true } }
+            : false,
+          user: {
+            select: {
+              id: true,
+              username: true,
+              avatar: true,
+            },
+          },
         },
         skip,
         take: pageSize,
@@ -676,6 +628,12 @@ export const getUserPostsService = async ({
         likeCount: post._count.likes,
         commentCount: post._count.comments,
         isLiked: currentUserId ? post.likes.length > 0 : false,
+        isSaved: currentUserId ? post.savedBy.length > 0 : false, // Changed from savedPosts
+        user: {
+          id: post.user.id,
+          username: post.user.username,
+          avatar: post.user.avatar,
+        },
       })),
       total,
       page,

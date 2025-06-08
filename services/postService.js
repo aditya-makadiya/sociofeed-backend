@@ -42,6 +42,7 @@ export const getFeedService = async ({ userId, page, pageSize }) => {
           user: { select: { id: true, username: true, avatar: true } },
           _count: { select: { likes: true, comments: true } },
           likes: userId ? { where: { userId }, select: { id: true } } : false,
+          savedBy: userId ? { where: { userId }, select: { id: true } } : false, // Changed from savedPosts
         },
         skip,
         take: pageSize,
@@ -65,6 +66,7 @@ export const getFeedService = async ({ userId, page, pageSize }) => {
         likeCount: post._count.likes,
         commentCount: post._count.comments,
         isLiked: userId ? post.likes.length > 0 : false,
+        isSaved: userId ? post.savedBy.length > 0 : false, // Changed from savedPosts
       })),
       total,
       page,
@@ -72,6 +74,50 @@ export const getFeedService = async ({ userId, page, pageSize }) => {
     };
   } catch (error) {
     throw new AppError(`Failed to fetch feed: ${error.message}`, 500);
+  }
+};
+
+export const savePostService = async (postId, userId) => {
+  if (!isValidUUID(postId)) throw new AppError('Invalid post ID format', 400);
+  if (!isValidUUID(userId)) throw new AppError('Invalid user ID format', 400);
+
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { user: { select: { isActive: true } } },
+  });
+  if (!post || !post.user.isActive)
+    throw new AppError('Post not found or user inactive', 404);
+
+  const existingSave = await prisma.savedPost.findUnique({
+    where: { userId_postId: { userId, postId } },
+  });
+  if (existingSave) throw new AppError('Post already saved', 400);
+
+  try {
+    await prisma.savedPost.create({ data: { userId, postId } });
+    return { isSaved: true }; // Ensure consistent return
+  } catch (error) {
+    throw new AppError(`Failed to save post: ${error.message}`, 500);
+  }
+};
+
+export const unsavePostService = async (postId, userId) => {
+  if (!isValidUUID(postId)) throw new AppError('Invalid post ID format', 400);
+  if (!isValidUUID(userId)) throw new AppError('Invalid user ID format', 400);
+
+  const existingSave = await prisma.savedPost.findUnique({
+    where: { userId_postId: { userId, postId } },
+  });
+  if (!existingSave) throw new AppError('Post not saved', 400);
+
+  try {
+    await prisma.savedPost.delete({
+      where: { userId_postId: { userId, postId } },
+    });
+    return { isSaved: false }; // Ensure consistent return
+  } catch (error) {
+    if (error.code === 'P2025') throw new AppError('Saved post not found', 404);
+    throw new AppError(`Failed to unsave post: ${error.message}`, 500);
   }
 };
 
@@ -454,47 +500,47 @@ export const deleteCommentService = async (commentId, userId) => {
   }
 };
 
-export const savePostService = async (postId, userId) => {
-  if (!isValidUUID(postId)) throw new AppError('Invalid post ID format', 400);
-  if (!isValidUUID(userId)) throw new AppError('Invalid user ID format', 400);
+// export const savePostService = async (postId, userId) => {
+//   if (!isValidUUID(postId)) throw new AppError('Invalid post ID format', 400);
+//   if (!isValidUUID(userId)) throw new AppError('Invalid user ID format', 400);
 
-  const post = await prisma.post.findUnique({
-    where: { id: postId },
-    select: { user: { select: { isActive: true } } },
-  });
-  if (!post || !post.user.isActive)
-    throw new AppError('Post not found or user inactive', 404);
+//   const post = await prisma.post.findUnique({
+//     where: { id: postId },
+//     select: { user: { select: { isActive: true } } },
+//   });
+//   if (!post || !post.user.isActive)
+//     throw new AppError('Post not found or user inactive', 404);
 
-  const existingSave = await prisma.savedPost.findUnique({
-    where: { userId_postId: { userId, postId } },
-  });
-  if (existingSave) throw new AppError('Post already saved', 400);
+//   const existingSave = await prisma.savedPost.findUnique({
+//     where: { userId_postId: { userId, postId } },
+//   });
+//   if (existingSave) throw new AppError('Post already saved', 400);
 
-  try {
-    await prisma.savedPost.create({ data: { userId, postId } });
-  } catch (error) {
-    throw new AppError(`Failed to save post: ${error.message}`, 500);
-  }
-};
+//   try {
+//     await prisma.savedPost.create({ data: { userId, postId } });
+//   } catch (error) {
+//     throw new AppError(`Failed to save post: ${error.message}`, 500);
+//   }
+// };
 
-export const unsavePostService = async (postId, userId) => {
-  if (!isValidUUID(postId)) throw new AppError('Invalid post ID format', 400);
-  if (!isValidUUID(userId)) throw new AppError('Invalid user ID format', 400);
+// export const unsavePostService = async (postId, userId) => {
+//   if (!isValidUUID(postId)) throw new AppError('Invalid post ID format', 400);
+//   if (!isValidUUID(userId)) throw new AppError('Invalid user ID format', 400);
 
-  const existingSave = await prisma.savedPost.findUnique({
-    where: { userId_postId: { userId, postId } },
-  });
-  if (!existingSave) throw new AppError('Post not saved', 400);
+//   const existingSave = await prisma.savedPost.findUnique({
+//     where: { userId_postId: { userId, postId } },
+//   });
+//   if (!existingSave) throw new AppError('Post not saved', 400);
 
-  try {
-    await prisma.savedPost.delete({
-      where: { userId_postId: { userId, postId } },
-    });
-  } catch (error) {
-    if (error.code === 'P2025') throw new AppError('Saved post not found', 404);
-    throw new AppError(`Failed to unsave post: ${error.message}`, 500);
-  }
-};
+//   try {
+//     await prisma.savedPost.delete({
+//       where: { userId_postId: { userId, postId } },
+//     });
+//   } catch (error) {
+//     if (error.code === 'P2025') throw new AppError('Saved post not found', 404);
+//     throw new AppError(`Failed to unsave post: ${error.message}`, 500);
+//   }
+// };
 
 export const getSavedPostsService = async ({ userId, page, pageSize }) => {
   if (!isValidUUID(userId)) throw new AppError('Invalid user ID format', 400);

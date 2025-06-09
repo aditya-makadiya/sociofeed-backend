@@ -12,6 +12,7 @@ import {
   savePostService,
   unsavePostService,
   getSavedPostsService,
+  getPostCommentsService, // Added new service
 } from '../services/postService.js';
 import { AppError } from '../middleware/errorHandler.js';
 
@@ -193,7 +194,7 @@ export const unsavePost = async (req, res, next) => {
     await unsavePostService(req.params.postId, req.user.userId);
     res.status(200).json({
       status: 'success',
-      message179: 'Post unsaved successfully',
+      message: 'Post unsaved successfully',
     });
   } catch (error) {
     next(error);
@@ -207,6 +208,25 @@ export const getSavedPosts = async (req, res, next) => {
       userId: req.user.userId,
       page: parseInt(req.query.page) || 1,
       pageSize: parseInt(req.query.pageSize) || 10,
+    });
+    res.status(200).json({
+      status: 'success',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPostComments = async (req, res, next) => {
+  try {
+    if (!req.user) throw new AppError('Authentication required', 401);
+    const { page = 1, pageSize = 10 } = req.query;
+    const result = await getPostCommentsService({
+      postId: req.params.postId,
+      userId: req.user.userId,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
     });
     res.status(200).json({
       status: 'success',

@@ -13,6 +13,7 @@ import {
   savePost,
   unsavePost,
   getSavedPosts,
+  getPostComments, // Added new controller
 } from '../controllers/postController.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { uploadPostImages } from '../middleware/multer.js';
@@ -26,47 +27,53 @@ import {
 
 const router = express.Router();
 
-router.get('/feed', authMiddleware, getFeed); // Get home feed
+router.get('/feed', authMiddleware, getFeed);
+router.get('/saved', authMiddleware, getSavedPosts);
 router.post(
   '/',
   authMiddleware,
   uploadPostImages,
   createPostValidations,
   createPost
-); // Create post
-router.get('/:postId', authMiddleware, postIdValidations, getPostById); // Get post details
+);
+router.get('/:postId', authMiddleware, postIdValidations, getPostById);
 router.put(
   '/:postId',
   authMiddleware,
   postIdValidations,
   updatePostValidations,
   updatePost
-); // Update post
-router.delete('/:postId', authMiddleware, postIdValidations, deletePost); // Delete post
-router.post('/:postId/like', authMiddleware, postIdValidations, likePost); // Like post
-router.delete('/:postId/unlike', authMiddleware, postIdValidations, unlikePost); // Unlike post
+);
+router.delete('/:postId', authMiddleware, postIdValidations, deletePost);
+router.post('/:postId/like', authMiddleware, postIdValidations, likePost);
+router.delete('/:postId/unlike', authMiddleware, postIdValidations, unlikePost);
 router.post(
   '/:postId/comments',
   authMiddleware,
   postIdValidations,
   commentValidations,
   addComment
-); // Add comment
+);
+router.get(
+  '/:postId/comments',
+  authMiddleware,
+  postIdValidations,
+  getPostComments
+); // Added new route
 router.put(
   '/comments/:commentId',
   authMiddleware,
   commentIdValidations,
   commentValidations,
   updateComment
-); // Update comment
+);
 router.delete(
   '/comments/:commentId',
   authMiddleware,
   commentIdValidations,
   deleteComment
-); // Delete comment
-router.post('/:postId/save', authMiddleware, postIdValidations, savePost); // Save post
-router.delete('/:postId/unsave', authMiddleware, postIdValidations, unsavePost); // Unsave post
-router.get('/saved', authMiddleware, getSavedPosts); // Get saved posts
+);
+router.post('/:postId/save', authMiddleware, postIdValidations, savePost);
+router.delete('/:postId/unsave', authMiddleware, postIdValidations, unsavePost);
 
 export default router;

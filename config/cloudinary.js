@@ -64,14 +64,15 @@ const uploadDefaultAvatar = async () => {
         { quality: 'auto', fetch_format: 'auto' },
       ],
     });
+    console.log(result);
 
-    console.log('Upload successful!');
-    console.log('Public ID:', result.public_id);
-    console.log('Secure URL:', result.secure_url);
+    // console.log('Upload successful!');
+    // console.log('Public ID:', result.public_id);
+    // console.log('Secure URL:', result.secure_url);
 
     // Update your .env file manually with the secure URL
-    console.log('Add this to your .env file:');
-    console.log(`CLOUDINARY_DEFAULT_AVATAR_URL=${result.secure_url}`);
+    // console.log('Add this to your .env file:');
+    // console.log(`CLOUDINARY_DEFAULT_AVATAR_URL=${result.secure_url}`);
   } catch (error) {
     console.error('Upload failed:', error.message);
     throw new AppError(
